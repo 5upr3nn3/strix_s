@@ -97,3 +97,8 @@ Thumbs.db
 schema.graphql
 
 .opencode/
+
+# strix-viz frontend
+strix_viz/frontend/node_modules/
+strix_viz/frontend/dist/
+strix_viz/frontend/.vite/

@@ -28,7 +28,8 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 packages = [
-  { include = "strix", format = ["sdist", "wheel"] }
+  { include = "strix", format = ["sdist", "wheel"] },
+  { include = "strix_viz", format = ["sdist", "wheel"] }
 ]
 include = [
   "LICENSE",
