@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -51,6 +52,7 @@ class Tracer:
         self._next_execution_id = 1
         self._next_message_id = 1
         self._saved_vuln_ids: set[str] = set()
+        self._events_file: Any | None = None
 
         self.vulnerability_found_callback: Callable[[str, str, str, str], None] | None = None
 
@@ -60,20 +62,62 @@ class Tracer:
 
     def get_run_dir(self) -> Path:
         if self._run_dir is None:
-            runs_dir = Path.cwd() / "strix_runs"
-            runs_dir.mkdir(exist_ok=True)
+            import os
+
+            # Check for STRIX_RUNS_DIR environment variable (same as strix_viz uses)
+            configured_runs_dir = os.environ.get("STRIX_RUNS_DIR")
+            if configured_runs_dir:
+                runs_dir = Path(configured_runs_dir).expanduser().resolve()
+            else:
+                runs_dir = Path.cwd() / "strix_runs"
+            runs_dir.mkdir(exist_ok=True, parents=True)
 
             run_dir_name = self.run_name if self.run_name else self.run_id
             self._run_dir = runs_dir / run_dir_name
-            self._run_dir.mkdir(exist_ok=True)
+            self._run_dir.mkdir(exist_ok=True, parents=True)
+
+            # Initialize events.jsonl file
+            events_file_path = self._run_dir / "events.jsonl"
+            try:
+                self._events_file = events_file_path.open("a", encoding="utf-8")
+                logger.info(f"Initialized events.jsonl at: {events_file_path}")
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to open events.jsonl file at {events_file_path}: {e}")
+                self._events_file = None
 
         return self._run_dir
+
+    def _log_event(self, event_type: str, **kwargs: Any) -> None:
+        """Log an event to events.jsonl file."""
+        if self._events_file is None:
+            self.get_run_dir()  # This will initialize _events_file
+        
+        if self._events_file is None:
+            logger.error("Failed to initialize events.jsonl file")
+            return
+
+        event = {
+            "ts": datetime.now(UTC).isoformat(),
+            "type": event_type,
+            **kwargs,
+        }
+        try:
+            event_json = json.dumps(event, ensure_ascii=False)
+            self._events_file.write(event_json + "\n")
+            self._events_file.flush()
+            logger.debug(f"Logged event: {event_type}")
+        except (OSError, IOError, AttributeError) as e:
+            logger.warning(f"Failed to write event to events.jsonl: {e}")
+        except Exception as e:
+            logger.exception(f"Unexpected error writing event: {e}")
 
     def add_vulnerability_report(
         self,
         title: str,
         content: str,
         severity: str,
+        agent_id: str | None = None,
+        target: str | None = None,
     ) -> str:
         report_id = f"vuln-{len(self.vulnerability_reports) + 1:04d}"
 
@@ -93,8 +137,43 @@ class Tracer:
                 report_id, title.strip(), content.strip(), severity.lower().strip()
             )
 
+        # Log vuln_found event for visualization
+        self._log_event(
+            event_type="vuln_found",
+            agent_id=agent_id,
+            target=target,
+            vuln_id=report_id,
+            severity=severity.lower().strip(),
+            category=self._extract_category_from_title(title),
+            description=content.strip()[:500],  # Truncate for event log
+        )
+
         self.save_run_data()
         return report_id
+
+    def _extract_category_from_title(self, title: str) -> str | None:
+        """Extract vulnerability category from title."""
+        title_lower = title.lower()
+        categories = [
+            "sql injection",
+            "xss",
+            "csrf",
+            "idor",
+            "ssrf",
+            "xxe",
+            "rce",
+            "authentication",
+            "authorization",
+            "path traversal",
+            "file upload",
+            "mass assignment",
+            "business logic",
+            "race condition",
+        ]
+        for category in categories:
+            if category in title_lower:
+                return category.replace(" ", "_")
+        return None
 
     def set_final_scan_result(
         self,
@@ -127,6 +206,17 @@ class Tracer:
         }
 
         self.agents[agent_id] = agent_data
+
+        # Log agent_step event for visualization
+        logger.info(f"About to log agent_step event for agent {agent_id}")
+        self._log_event(
+            event_type="agent_step",
+            agent_id=agent_id,
+            action="created",
+            status="running",
+            meta={"name": name, "task": task, "parent_id": parent_id},
+        )
+        logger.info(f"Agent step event logged for agent {agent_id}")
 
     def log_chat_message(
         self,
@@ -172,15 +262,56 @@ class Tracer:
         if agent_id in self.agents:
             self.agents[agent_id]["tool_executions"].append(execution_id)
 
+        # Extract target from args for visualization
+        target = None
+        if isinstance(args, dict):
+            target = args.get("url") or args.get("target") or args.get("path")
+
+        # Log mcp_tool_call event for visualization
+        self._log_event(
+            event_type="mcp_tool_call",
+            agent_id=agent_id,
+            tool=tool_name,
+            target=target,
+            status="running",
+            args=args,
+        )
+
         return execution_id
 
     def update_tool_execution(
         self, execution_id: int, status: str, result: Any | None = None
     ) -> None:
         if execution_id in self.tool_executions:
-            self.tool_executions[execution_id]["status"] = status
-            self.tool_executions[execution_id]["result"] = result
-            self.tool_executions[execution_id]["completed_at"] = datetime.now(UTC).isoformat()
+            execution_data = self.tool_executions[execution_id]
+            execution_data["status"] = status
+            execution_data["result"] = result
+            execution_data["completed_at"] = datetime.now(UTC).isoformat()
+
+            # Log tool completion event for visualization
+            agent_id = execution_data.get("agent_id")
+            tool_name = execution_data.get("tool_name")
+            args = execution_data.get("args", {})
+
+            target = None
+            if isinstance(args, dict):
+                target = args.get("url") or args.get("target") or args.get("path")
+
+            result_summary = None
+            if isinstance(result, str):
+                result_summary = result[:200] + "..." if len(result) > 200 else result
+            elif isinstance(result, dict):
+                result_summary = str(result).replace("\n", " ")[:200]
+
+            self._log_event(
+                event_type="mcp_tool_call",
+                agent_id=agent_id,
+                tool=tool_name,
+                target=target,
+                status=status,
+                args=args,
+                result_summary=result_summary,
+            )
 
     def update_agent_status(
         self, agent_id: str, status: str, error_message: str | None = None
@@ -190,6 +321,15 @@ class Tracer:
             self.agents[agent_id]["updated_at"] = datetime.now(UTC).isoformat()
             if error_message:
                 self.agents[agent_id]["error_message"] = error_message
+
+        # Log agent_step event for status changes
+        self._log_event(
+            event_type="agent_step",
+            agent_id=agent_id,
+            action="status_update",
+            status=status,
+            meta={"error_message": error_message} if error_message else {},
+        )
 
     def set_scan_config(self, config: dict[str, Any]) -> None:
         self.scan_config = config
@@ -201,6 +341,14 @@ class Tracer:
             }
         )
         self.get_run_dir()
+        # Log initial scan start event
+        self._log_event(
+            event_type="scan_start",
+            run_id=self.run_id,
+            run_name=self.run_name,
+            targets=config.get("targets", []),
+            meta={"start_time": self.start_time},
+        )
 
     def save_run_data(self, mark_complete: bool = False) -> None:
         try:
@@ -335,3 +483,9 @@ class Tracer:
 
     def cleanup(self) -> None:
         self.save_run_data(mark_complete=True)
+        if self._events_file:
+            try:
+                self._events_file.close()
+            except (OSError, IOError):
+                pass
+            self._events_file = None

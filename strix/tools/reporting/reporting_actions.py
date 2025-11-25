@@ -8,6 +8,8 @@ def create_vulnerability_report(
     title: str,
     content: str,
     severity: str,
+    agent_state: Any | None = None,
+    target: str | None = None,
 ) -> dict[str, Any]:
     validation_error = None
     if not title or not title.strip():
@@ -31,10 +33,13 @@ def create_vulnerability_report(
 
         tracer = get_global_tracer()
         if tracer:
+            agent_id = agent_state.agent_id if agent_state and hasattr(agent_state, "agent_id") else None
             report_id = tracer.add_vulnerability_report(
                 title=title,
                 content=content,
                 severity=severity,
+                agent_id=agent_id,
+                target=target,
             )
 
             return {

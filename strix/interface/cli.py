@@ -82,6 +82,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
 
     tracer = Tracer(args.run_name)
     tracer.set_scan_config(scan_config)
+    set_global_tracer(tracer)  # Set tracer early so it's available during agent creation
 
     def display_vulnerability(report_id: str, title: str, content: str, severity: str) -> None:
         severity_color = get_severity_color(severity.lower())
@@ -128,6 +129,7 @@ async def run_cli(args: Any) -> None:  # noqa: PLR0915
     if hasattr(signal, "SIGHUP"):
         signal.signal(signal.SIGHUP, signal_handler)
 
+    # Tracer already set above, but ensure it's still set
     set_global_tracer(tracer)
 
     try:

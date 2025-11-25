@@ -84,12 +84,16 @@ class BaseAgent(metaclass=AgentMeta):
 
         tracer = get_global_tracer()
         if tracer:
+            logger.info(f"Logging agent creation: {self.state.agent_id}")
             tracer.log_agent_creation(
                 agent_id=self.state.agent_id,
                 name=self.state.agent_name,
                 task=self.state.task,
                 parent_id=self.state.parent_id,
             )
+            logger.info(f"Agent creation logged: {self.state.agent_id}")
+        else:
+            logger.warning("Global tracer not available during agent creation")
             if self.state.parent_id is None:
                 scan_config = tracer.scan_config or {}
                 exec_id = tracer.log_tool_execution_start(
@@ -151,7 +155,9 @@ class BaseAgent(metaclass=AgentMeta):
             self._current_task = None
 
     async def agent_loop(self, task: str) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
+        logger.info(f"Starting agent_loop for agent {self.state.agent_id} with task: {task[:50]}...")
         await self._initialize_sandbox_and_state(task)
+        logger.info(f"Sandbox initialized, starting main loop for agent {self.state.agent_id}")
 
         from strix.telemetry.tracer import get_global_tracer
 
@@ -330,14 +336,18 @@ class BaseAgent(metaclass=AgentMeta):
     async def _initialize_sandbox_and_state(self, task: str) -> None:
         import os
 
+        logger.info(f"Initializing sandbox for agent {self.state.agent_id}")
         sandbox_mode = os.getenv("STRIX_SANDBOX_MODE", "false").lower() == "true"
         if not sandbox_mode and self.state.sandbox_id is None:
+            logger.info("Sandbox mode is disabled, creating Docker container...")
             from strix.runtime import get_runtime
 
             runtime = get_runtime()
+            logger.info(f"Got runtime, creating sandbox for agent {self.state.agent_id}")
             sandbox_info = await runtime.create_sandbox(
                 self.state.agent_id, self.state.sandbox_token, self.local_sources
             )
+            logger.info(f"Sandbox created: {sandbox_info.get('workspace_id')}")
             self.state.sandbox_id = sandbox_info["workspace_id"]
             self.state.sandbox_token = sandbox_info["auth_token"]
             self.state.sandbox_info = sandbox_info
