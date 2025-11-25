@@ -125,7 +125,7 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
           <span className="terminal-ts">[{timestamp}]</span>
           <span className="terminal-agent">({call.agent_id ?? "system"})</span>
           <span className="terminal-tool">&gt; {call.tool ?? "tool.call"}</span>
-          <span className="terminal-target">{target}</span>
+          <span className="terminal-target">{String(target)}</span>
           {status && <span className={`terminal-status status-${statusClass}`}>{status}</span>}
         </button>
         {summary && <div className="terminal-summary">→ {summary}</div>}
