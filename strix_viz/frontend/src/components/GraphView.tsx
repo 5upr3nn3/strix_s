@@ -198,6 +198,10 @@ const GraphView = ({ snapshot, agentFilter, severityFilter, highlightedNodeId, o
 
   const handleCyInit = (cy: Core) => {
     cyRef.current = cy;
+    // Disable panning and zooming with mouse drag
+    cy.userPanningEnabled(false);
+    cy.boxSelectionEnabled(false);
+    
     cy.off("tap");
     cy.on("tap", "node", (event) => {
       const node = event.target;
@@ -211,6 +215,16 @@ const GraphView = ({ snapshot, agentFilter, severityFilter, highlightedNodeId, o
     });
   };
 
+  const handleReset = () => {
+    if (!cyRef.current) {
+      return;
+    }
+    const cy = cyRef.current;
+    const layout = cy.layout({ name: "breadthfirst", directed: true, padding: 20, spacingFactor: 0.8 });
+    layout.run();
+    cy.fit(undefined, 50); // Fit with 50px padding
+  };
+
   useEffect(() => {
     if (!cyRef.current) {
       return;
@@ -220,13 +234,20 @@ const GraphView = ({ snapshot, agentFilter, severityFilter, highlightedNodeId, o
   }, [elements]);
 
   return (
-    <CytoscapeComponent
-      elements={elements}
-      stylesheet={stylesheet}
-      cy={handleCyInit}
-      className="graph-canvas"
-      style={{ width: "100%", height: "100%" }}
-    />
+    <div className="graph-container">
+      <div className="graph-controls">
+        <button type="button" onClick={handleReset}>
+          Сбросить позицию
+        </button>
+      </div>
+      <CytoscapeComponent
+        elements={elements}
+        stylesheet={stylesheet}
+        cy={handleCyInit}
+        className="graph-canvas"
+        style={{ width: "100%", height: "100%" }}
+      />
+    </div>
   );
 };
 

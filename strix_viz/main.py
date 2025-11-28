@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
-from .run_loader import list_runs, load_events_page, load_snapshot, stream_new_events
+from .run_loader import list_runs, load_events_page, load_snapshot, stream_new_events, load_vulnerabilities
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +40,13 @@ def api_events(run_id: str, offset: int = 0, limit: int = 200):
     limit = max(1, min(limit, 1000))
     page = load_events_page(run_id, offset=offset, limit=limit)
     return page.model_dump()
+
+
+@app.get("/api/runs/{run_id}/vulnerabilities")
+def api_vulnerabilities(run_id: str):
+    """Load vulnerabilities from agent_runs directory."""
+    vulnerabilities = load_vulnerabilities(run_id)
+    return vulnerabilities
 
 
 @app.websocket("/ws/runs/{run_id}")

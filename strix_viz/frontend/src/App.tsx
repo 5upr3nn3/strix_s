@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import GraphView, { GraphSelection } from "./components/GraphView";
 import NodeDetailsPanel from "./components/NodeDetailsPanel";
 import TerminalView, { TerminalFilters } from "./components/TerminalView";
+import VulnerabilitiesPanel from "./components/VulnerabilitiesPanel";
 import type { LiveEvent, RunMetadata, Snapshot, ToolCall } from "./types";
 
 const defaultTerminalFilters: TerminalFilters = {
@@ -12,10 +13,10 @@ const defaultTerminalFilters: TerminalFilters = {
 };
 
 const TIME_RANGES = [
-  { value: "all", label: "All time" },
-  { value: "5m", label: "Last 5 min" },
-  { value: "15m", label: "Last 15 min" },
-  { value: "1h", label: "Last hour" }
+  { value: "all", label: "Все время" },
+  { value: "5m", label: "Последние 5 мин" },
+  { value: "15m", label: "Последние 15 мин" },
+  { value: "1h", label: "Последний час" }
 ];
 
 const App = () => {
@@ -203,24 +204,24 @@ const App = () => {
       <header className="app-header">
         <div className="title-group">
           <h1>Strix Viz</h1>
-          {loading && <span className="badge">Loading…</span>}
+          {loading && <span className="badge">Загрузка…</span>}
         </div>
         <div className="toolbar">
           <label>
-            Run
+            Запуск
             <select value={selectedRun} onChange={handleRunChange} disabled={!runs.length}>
-              {!runs.length && <option value="">No runs found</option>}
+              {!runs.length && <option value="">Запуски не найдены</option>}
               {runs.map((run) => (
                 <option key={run.id} value={run.id}>
-                  {run.id} ({run.event_count} events)
+                  {run.id} ({run.event_count} событий)
                 </option>
               ))}
             </select>
           </label>
           <label>
-            Agent filter
+            Фильтр агента
             <select value={agentFilter} onChange={(event) => setAgentFilter(event.target.value)}>
-              <option value="all">All</option>
+              <option value="all">Все</option>
               {agentOptions.map((agent) => (
                 <option key={agent.id} value={agent.id}>
                   {agent.label}
@@ -229,9 +230,9 @@ const App = () => {
             </select>
           </label>
           <label>
-            Severity
+            Критичность
             <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}>
-              <option value="all">All</option>
+              <option value="all">Все</option>
               {severityOptions.map((severity) => (
                 <option key={severity} value={severity}>
                   {severity}
@@ -240,7 +241,7 @@ const App = () => {
             </select>
           </label>
           <label>
-            Time range
+            Временной диапазон
             <select value={timeRange} onChange={(event) => setTimeRange(event.target.value)}>
               {TIME_RANGES.map((range) => (
                 <option key={range.value} value={range.value}>
@@ -253,24 +254,27 @@ const App = () => {
       </header>
       {error && <div className="error-banner">{error}</div>}
       <div className="main-grid">
-        <div className="graph-section">
-          <GraphView
-            snapshot={snapshot}
-            agentFilter={agentFilter}
-            severityFilter={severityFilter}
-            highlightedNodeId={highlightedNodeId}
-            onNodeSelect={handleNodeSelect}
-          />
-          <NodeDetailsPanel selection={selectedNode} snapshot={snapshot} onClear={() => handleNodeSelect(null)} />
+        <div className="main-content">
+          <div className="graph-section">
+            <GraphView
+              snapshot={snapshot}
+              agentFilter={agentFilter}
+              severityFilter={severityFilter}
+              highlightedNodeId={highlightedNodeId}
+              onNodeSelect={handleNodeSelect}
+            />
+            <NodeDetailsPanel selection={selectedNode} snapshot={snapshot} onClear={() => handleNodeSelect(null)} />
+          </div>
+          <div className="terminal-section">
+            <TerminalView
+              toolCalls={assetFilteredCalls}
+              filters={terminalFilters}
+              onFiltersChange={setTerminalFilters}
+              onSelectCall={handleTerminalSelect}
+            />
+          </div>
         </div>
-        <div className="terminal-section">
-          <TerminalView
-            toolCalls={assetFilteredCalls}
-            filters={terminalFilters}
-            onFiltersChange={setTerminalFilters}
-            onSelectCall={handleTerminalSelect}
-          />
-        </div>
+        <VulnerabilitiesPanel runId={selectedRun} />
       </div>
     </div>
   );

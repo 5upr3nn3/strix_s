@@ -18,7 +18,7 @@ const NodeDetailsPanel = ({ selection, snapshot, onClear }: NodeDetailsPanelProp
   if (!selection || !snapshot) {
     return (
       <div className="node-details empty">
-        <p>Select a node to see details.</p>
+        <p>Выберите узел для просмотра деталей.</p>
       </div>
     );
   }
@@ -37,17 +37,17 @@ const NodeDetailsPanel = ({ selection, snapshot, onClear }: NodeDetailsPanelProp
     return (
       <div className="node-details">
         <header>
-          <h3>Agent {agent.label}</h3>
+          <h3>Агент {agent.label}</h3>
           <button type="button" onClick={onClear}>
-            Clear
+            Очистить
           </button>
         </header>
         <p>ID: {agent.id}</p>
-        <p>First seen: {formatDate(agent.first_seen)}</p>
-        <p>Last seen: {formatDate(agent.last_seen)}</p>
-        <h4>Assets touched</h4>
+        <p>Первый раз: {formatDate(agent.first_seen)}</p>
+        <p>Последний раз: {formatDate(agent.last_seen)}</p>
+        <h4>Затронутые ресурсы</h4>
         <ul>
-          {associatedAssets.length ? associatedAssets.map((assetId) => <li key={assetId}>{assetId}</li>) : <li>No assets recorded.</li>}
+          {associatedAssets.length ? associatedAssets.map((assetId) => <li key={assetId}>{assetId}</li>) : <li>Ресурсы не зафиксированы.</li>}
         </ul>
       </div>
     );
@@ -65,27 +65,27 @@ const NodeDetailsPanel = ({ selection, snapshot, onClear }: NodeDetailsPanelProp
     return (
       <div className="node-details">
         <header>
-          <h3>Asset</h3>
+          <h3>Ресурс</h3>
           <button type="button" onClick={onClear}>
-            Clear
+            Очистить
           </button>
         </header>
         <p>URL: {asset.url}</p>
-        <p>First seen: {formatDate(asset.first_seen)}</p>
-        <p>Last seen: {formatDate(asset.last_seen)}</p>
-        <h4>Agents</h4>
+        <p>Первый раз: {formatDate(asset.first_seen)}</p>
+        <p>Последний раз: {formatDate(asset.last_seen)}</p>
+        <h4>Агенты</h4>
         <ul>
-          {incomingAgents.length ? incomingAgents.map((edge) => <li key={edge.id}>{edge.source}</li>) : <li>No agents yet.</li>}
+          {incomingAgents.length ? incomingAgents.map((edge) => <li key={edge.id}>{edge.source}</li>) : <li>Агенты отсутствуют.</li>}
         </ul>
-        <h4>Vulnerabilities</h4>
+        <h4>Уязвимости</h4>
         <ul>
           {relatedVulns.length
             ? relatedVulns.map((vuln) => (
                 <li key={vuln.id}>
-                  {vuln.id} ({vuln.severity ?? "unknown"}) - {vuln.category ?? ""}
+                  {vuln.id} ({vuln.severity ?? "неизвестно"}) - {vuln.category ?? ""}
                 </li>
               ))
-            : <li>No findings.</li>}
+            : <li>Находки отсутствуют.</li>}
         </ul>
       </div>
     );
@@ -98,19 +98,19 @@ const NodeDetailsPanel = ({ selection, snapshot, onClear }: NodeDetailsPanelProp
   return (
     <div className="node-details">
       <header>
-        <h3>Vulnerability {vuln.id}</h3>
+        <h3>Уязвимость {vuln.id}</h3>
         <button type="button" onClick={onClear}>
-          Clear
+          Очистить
         </button>
       </header>
-      <p>Severity: {vuln.severity ?? "unknown"}</p>
-      <p>Category: {vuln.category ?? "n/a"}</p>
-      <p>Detected: {formatDate(vuln.ts)}</p>
-      {vuln.asset_id && <p>Asset: {vuln.asset_id}</p>}
-      {vuln.agent_id && <p>Agent: {vuln.agent_id}</p>}
+      <p>Критичность: {vuln.severity ?? "неизвестно"}</p>
+      <p>Категория: {vuln.category ?? "н/д"}</p>
+      <p>Обнаружена: {formatDate(vuln.ts)}</p>
+      {vuln.asset_id && <p>Ресурс: {vuln.asset_id}</p>}
+      {vuln.agent_id && <p>Агент: {vuln.agent_id}</p>}
       {vuln.description && (
         <div>
-          <h4>Description</h4>
+          <h4>Описание</h4>
           <p>{vuln.description}</p>
         </div>
       )}

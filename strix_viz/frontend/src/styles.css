@@ -75,8 +75,16 @@ body {
 .main-grid {
   flex: 1;
   display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0;
+  min-height: 0;
+}
+
+.main-content {
+  display: grid;
   grid-template-rows: 65% 35%;
   gap: 0;
+  min-height: 0;
 }
 
 .graph-section {
@@ -254,7 +262,114 @@ body {
   background: #14532d;
 }
 
+.vulnerabilities-panel {
+  border-left: 1px solid #1f2937;
+  padding: 1rem;
+  overflow-y: auto;
+  background: #0b1120;
+}
+
+.vulnerabilities-panel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #f1f5f9;
+}
+
+.vulnerabilities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vulnerability-item {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.vulnerability-item:hover {
+  background: #334155;
+}
+
+.vulnerability-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.vulnerability-id {
+  font-family: "Fira Code", monospace;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.vulnerability-severity {
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.vulnerability-title {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #f1f5f9;
+}
+
+.vulnerability-timestamp {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.vulnerabilities-loading,
+.vulnerabilities-error,
+.vulnerabilities-empty {
+  text-align: center;
+  padding: 2rem 0;
+  color: #64748b;
+}
+
+.vulnerabilities-error {
+  color: #f87171;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.graph-controls button {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: inherit;
+  padding: 0.5rem 1rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.graph-controls button:hover {
+  background: #334155;
+}
+
+.graph-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 @media (max-width: 1024px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
   .graph-section {
     grid-template-columns: 1fr;
     grid-template-rows: 2fr 1fr;

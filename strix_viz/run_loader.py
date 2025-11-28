@@ -12,7 +12,7 @@ from typing import Any, AsyncIterator, Dict, Optional, Tuple
 
 from fastapi import HTTPException, status
 
-from .config import EVENTS_FILE_NAME, get_events_path, get_run_dir, get_runs_dir
+from .config import EVENTS_FILE_NAME, get_events_path, get_run_dir, get_runs_dir, get_agent_runs_dir
 from .models import Agent, Asset, Edge, EventDict, PaginatedEvents, RunMetadata, Snapshot, ToolCall, Vulnerability
 
 LOGGER = logging.getLogger(__name__)
@@ -285,3 +285,67 @@ async def stream_new_events(run_id: str, start_at_end: bool = True) -> AsyncIter
                 continue
             if isinstance(payload, dict):
                 yield payload
+
+
+# ---------------------------------------------------------------------------
+# Vulnerabilities loader
+# ---------------------------------------------------------------------------
+
+
+def load_vulnerabilities(run_id: str) -> list[dict[str, Any]]:
+    """Load vulnerabilities from agent_runs directory."""
+    import csv
+
+    agent_runs_dir = get_agent_runs_dir()
+    if not agent_runs_dir.exists():
+        return []
+
+    vulnerabilities: list[dict[str, Any]] = []
+    csv_path: Path | None = None
+    
+    # First, try exact match by run_id
+    run_dir = agent_runs_dir / run_id
+    csv_path = run_dir / "vulnerabilities.csv"
+    
+    if not csv_path.exists():
+        # Try to find by scanning all directories and matching by name similarity
+        # or just load from the most recent directory with vulnerabilities.csv
+        found_dirs: list[tuple[Path, float]] = []
+        for subdir in agent_runs_dir.iterdir():
+            if not subdir.is_dir():
+                continue
+            potential_csv = subdir / "vulnerabilities.csv"
+            if potential_csv.exists():
+                # Get modification time to sort by most recent
+                try:
+                    mtime = potential_csv.stat().st_mtime
+                    found_dirs.append((potential_csv, mtime))
+                except OSError:
+                    continue
+        
+        if found_dirs:
+            # Sort by modification time (most recent first) and take the first one
+            found_dirs.sort(key=lambda x: x[1], reverse=True)
+            csv_path = found_dirs[0][0]
+        else:
+            return []
+
+    if csv_path is None or not csv_path.exists():
+        return []
+
+    try:
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                vulnerabilities.append({
+                    "id": row.get("id", ""),
+                    "title": row.get("title", ""),
+                    "severity": row.get("severity", ""),
+                    "timestamp": row.get("timestamp", ""),
+                    "file": row.get("file", ""),
+                })
+    except (OSError, IOError, csv.Error) as e:
+        LOGGER.warning(f"Failed to read vulnerabilities.csv: {e}")
+        return []
+
+    return vulnerabilities

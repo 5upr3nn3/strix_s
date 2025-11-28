@@ -71,9 +71,9 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
   const renderFilters = () => (
     <div className="terminal-filters">
       <label>
-        Agent
+        Агент
         <select value={filters.agentId} onChange={(event) => onFiltersChange({ ...filters, agentId: event.target.value })}>
-          <option value="all">All</option>
+          <option value="all">Все</option>
           {agents.map((agentId) => (
             <option key={agentId} value={agentId}>
               {agentId}
@@ -82,9 +82,9 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
         </select>
       </label>
       <label>
-        Tool
+        Инструмент
         <select value={filters.tool} onChange={(event) => onFiltersChange({ ...filters, tool: event.target.value })}>
-          <option value="all">All</option>
+          <option value="all">Все</option>
           {tools.map((tool) => (
             <option key={tool} value={tool}>
               {tool}
@@ -98,7 +98,7 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
           checked={filters.onlyErrors}
           onChange={(event) => onFiltersChange({ ...filters, onlyErrors: event.target.checked })}
         />
-        Only errors
+        Только ошибки
       </label>
       <label className="terminal-toggle">
         <input
@@ -106,7 +106,7 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
           checked={filters.onlySuccess}
           onChange={(event) => onFiltersChange({ ...filters, onlySuccess: event.target.checked })}
         />
-        Only successful exploits
+        Только успешные
       </label>
     </div>
   );
@@ -132,12 +132,12 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
         {isExpanded && (
           <div className="terminal-details">
             <div>
-              <strong>Args:</strong>
+              <strong>Аргументы:</strong>
               <pre>{JSON.stringify(call.args, null, 2)}</pre>
             </div>
             {call.result_summary && (
               <div>
-                <strong>Result:</strong>
+                <strong>Результат:</strong>
                 <p>{call.result_summary}</p>
               </div>
             )}
@@ -151,7 +151,7 @@ const TerminalView = ({ toolCalls, filters, onFiltersChange, onSelectCall }: Ter
     <div className="terminal-view">
       {renderFilters()}
       <div className="terminal-window">
-        {filteredCalls.length === 0 && <div className="terminal-placeholder">No tool calls yet.</div>}
+        {filteredCalls.length === 0 && <div className="terminal-placeholder">Вызовы инструментов отсутствуют.</div>}
         {filteredCalls.map(renderCall)}
       </div>
     </div>
